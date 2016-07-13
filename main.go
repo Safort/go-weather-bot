@@ -2,9 +2,12 @@ package main
 
 import (
     "fmt"
+    "./config"
 )
 
-
 func main() {
-    fmt.Println("Hello from weather bot")
+    cnfg := config.Load()
+
+    fmt.Println("BotToken =", cnfg.BotToken)
+    fmt.Println("OwmToken =", cnfg.OwmToken)
 }
