@@ -1,0 +1,1 @@
+Just experiment with creating Telegram bot on Go.
