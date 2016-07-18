@@ -33,3 +33,33 @@ func (self *Storage) Get(name string) (StorageItem, bool) {
 func NewStorage() *Storage {
     return &Storage{cities: make(map[string]StorageItem)}
 }
+
+
+
+func EnByRuDayMap(day string) time.Weekday {
+    m := map[string]time.Weekday {
+        "Понедельник": time.Monday,
+        "Вторник": time.Tuesday,
+        "Среда": time.Wednesday,
+        "Четверг": time.Thursday,
+        "Пятница": time.Friday,
+        "Суббота": time.Saturday,
+        "Воскресенье": time.Sunday,
+    }
+
+    return m[day]
+}
+
+func RuByEnDayMap(day time.Weekday) string {
+    m := map[time.Weekday]string {
+        time.Monday: "Понедельник",
+        time.Tuesday: "Вторник",
+        time.Wednesday: "Среда",
+        time.Thursday: "Четверг",
+        time.Friday: "Пятница",
+        time.Saturday: "Суббота",
+        time.Sunday: "Воскресенье",
+    }
+
+    return m[day]
+}
