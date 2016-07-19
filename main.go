@@ -16,6 +16,18 @@ import (
 )
 
 
+type CityInfo struct {
+    Name string
+    Day time.Weekday
+    WindSpeed string
+    Clouds string
+    TempMorn string
+    TempDay string
+    TempEve string
+    TempNight string
+}
+
+
 func requestCityInfo(cityName string) weathermap.WeatherMap {
     var weather weathermap.WeatherMap
     cnfg := config.Load()
@@ -48,9 +60,22 @@ func commandHelp() string {
 }
 
 
+func formCityInfo(city CityInfo) string {
+    return "Город: " + city.Name + "\n" +
+           "День: " + storage.RuByEnDayMap(city.Day) + "\n" +
+           "Скорость ветра: " + city.WindSpeed + " м/с \n" +
+           "Облачность: " + city.Clouds + "%\n" +
+           "Температура\n" +
+           "- Утро: " + city.TempMorn + "°C\n" +
+           "- День: " + city.TempDay + "°C\n" +
+           "- Вечер: " + city.TempEve + "°C\n" +
+           "- Ночь: " + city.TempNight + "°C\n"
+}
+
+
 func commandCity(city storage.StorageItem) string {
-    var windSpeed, clouds, tMorn, tDay, tEve, tNight string
-    name := city.City.Name
+    var cityInfo CityInfo
+    cityInfo.Name = city.City.Name
     presentDay := time.Now().Weekday()
 
     for i, list := 0, city.List; i < len(list); i++ {
@@ -58,27 +83,20 @@ func commandCity(city storage.StorageItem) string {
         weekday := time.Unix(int64(item.Dt), 0).Weekday()
 
         if weekday == presentDay {
-            windSpeed = strconv.FormatFloat(item.Speed, 'f', -1, 64)
-            clouds = strconv.Itoa(item.Clouds)
+            cityInfo.Day = weekday
+            cityInfo.WindSpeed = strconv.FormatFloat(item.Speed, 'f', -1, 64)
+            cityInfo.Clouds = strconv.Itoa(item.Clouds)
 
-            tMorn = strconv.FormatFloat(item.Temp.Morn, 'f', -1, 64)
-            tDay = strconv.FormatFloat(item.Temp.Day, 'f', -1, 64)
-            tEve = strconv.FormatFloat(item.Temp.Eve, 'f', -1, 64)
-            tNight = strconv.FormatFloat(item.Temp.Night, 'f', -1, 64)
+            cityInfo.TempMorn = strconv.FormatFloat(item.Temp.Morn, 'f', -1, 64)
+            cityInfo.TempDay = strconv.FormatFloat(item.Temp.Day, 'f', -1, 64)
+            cityInfo.TempEve = strconv.FormatFloat(item.Temp.Eve, 'f', -1, 64)
+            cityInfo.TempNight = strconv.FormatFloat(item.Temp.Night, 'f', -1, 64)
 
             break
         }
     }
 
-    return "Город: " + name + "\n" +
-           "День: " + storage.RuByEnDayMap(presentDay) + "\n" +
-           "Скорость ветра: " + windSpeed + " м/с \n" +
-           "Облачность: " + clouds + "%\n" +
-           "Температура\n" +
-           "- Утро: " + tMorn + "°C\n" +
-           "- День: " + tDay + "°C\n" +
-           "- Вечер: " + tEve + "°C\n" +
-           "- Ночь: " + tNight + "°C\n"
+    return formCityInfo(cityInfo)
 }
 
 
