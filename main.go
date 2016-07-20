@@ -61,8 +61,7 @@ func commandHelp() string {
 
 
 func formCityInfo(city CityInfo) string {
-    return "Город: " + city.Name + "\n" +
-           "День: " + storage.RuByEnDayMap(city.Day) + "\n" +
+    return "День: " + storage.RuByEnDayMap(city.Day) + "\n" +
            "Скорость ветра: " + city.WindSpeed + " м/с \n" +
            "Облачность: " + city.Clouds + "%\n" +
            "Температура\n" +
@@ -96,7 +95,31 @@ func commandCity(city storage.StorageItem) string {
         }
     }
 
-    return formCityInfo(cityInfo)
+    return "Город: " + cityInfo.Name + "\n" + formCityInfo(cityInfo)
+}
+
+
+func commandCityFullWeek(city storage.StorageItem) string {
+    var info string
+
+    for i, list := 0, city.List; i < len(list); i++ {
+        var cityInfo CityInfo
+        item := list[i]
+        weekday := time.Unix(int64(item.Dt), 0).Weekday()
+
+        cityInfo.Day = weekday
+        cityInfo.WindSpeed = strconv.FormatFloat(item.Speed, 'f', -1, 64)
+        cityInfo.Clouds = strconv.Itoa(item.Clouds)
+
+        cityInfo.TempMorn = strconv.FormatFloat(item.Temp.Morn, 'f', -1, 64)
+        cityInfo.TempDay = strconv.FormatFloat(item.Temp.Day, 'f', -1, 64)
+        cityInfo.TempEve = strconv.FormatFloat(item.Temp.Eve, 'f', -1, 64)
+        cityInfo.TempNight = strconv.FormatFloat(item.Temp.Night, 'f', -1, 64)
+
+        info += formCityInfo(cityInfo) + "\n---\n"
+    }
+
+    return "Город: " + city.City.Name + "\n\n" + info
 }
 
 
@@ -148,9 +171,9 @@ func main() {
                 }
 
                 if len(args) == 2 {
-                    answerText = commandCity(city) //Погода на сегодня
-                } else if len(args) == 3 {
-                    answerText = "Погода на всю неделю или выбранный день"
+                    answerText = commandCity(city) // Погода на сегодня
+                } else if len(args) == 3 && args[2] == "week" {
+                    answerText = commandCityFullWeek(city) // Погода на всю неделю или выбранный день
                 }
             
             default:
