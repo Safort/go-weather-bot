@@ -72,16 +72,15 @@ func formCityInfo(city CityInfo) string {
 }
 
 
-func commandCity(city storage.StorageItem) string {
+func commandCity(city storage.StorageItem, day time.Weekday) string {
     var cityInfo CityInfo
     cityInfo.Name = city.City.Name
-    presentDay := time.Now().Weekday()
 
     for i, list := 0, city.List; i < len(list); i++ {
         item := list[i]
         weekday := time.Unix(int64(item.Dt), 0).Weekday()
 
-        if weekday == presentDay {
+        if weekday == day {
             cityInfo.Day = weekday
             cityInfo.WindSpeed = strconv.FormatFloat(item.Speed, 'f', -1, 64)
             cityInfo.Clouds = strconv.Itoa(item.Clouds)
@@ -171,9 +170,11 @@ func main() {
                 }
 
                 if len(args) == 2 {
-                    answerText = commandCity(city) // Погода на сегодня
+                    answerText = commandCity(city, time.Now().Weekday()) // Погода на сегодня
                 } else if len(args) == 3 && args[2] == "week" {
-                    answerText = commandCityFullWeek(city) // Погода на всю неделю или выбранный день
+                    answerText = commandCityFullWeek(city) // Погода на всю неделю
+                } else {
+                    answerText = commandCity(city, storage.EnByRuDayMap(args[2])) // Погода на выбранный день
                 }
             
             default:
