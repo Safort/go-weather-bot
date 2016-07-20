@@ -8,28 +8,16 @@ import (
     "encoding/json"
     "strings"
     "time"
-    "strconv"
     "gopkg.in/telegram-bot-api.v4"
     "./config"
-    "./weathermap"
+    "./types"
     "./storage"
+    "./commands"
 )
 
 
-type CityInfo struct {
-    Name string
-    Day time.Weekday
-    WindSpeed string
-    Clouds string
-    TempMorn string
-    TempDay string
-    TempEve string
-    TempNight string
-}
-
-
-func requestCityInfo(cityName string) weathermap.WeatherMap {
-    var weather weathermap.WeatherMap
+func requestCityInfo(cityName string) types.WeatherMap {
+    var weather types.WeatherMap
     cnfg := config.Load()
     
     // Create request url
@@ -50,75 +38,8 @@ func requestCityInfo(cityName string) weathermap.WeatherMap {
 
     dec := json.NewDecoder(bytes.NewReader(resText))
     dec.Decode(&weather)
+
     return weather
-}
-
-
-func commandHelp() string {
-    return "go-weather-bot - это всего лишь попытка прокачать себя в новой" +
-           " области программирования на языке Go."
-}
-
-
-func formCityInfo(city CityInfo) string {
-    return "День: " + storage.RuByEnDayMap(city.Day) + "\n" +
-           "Скорость ветра: " + city.WindSpeed + " м/с \n" +
-           "Облачность: " + city.Clouds + "%\n" +
-           "Температура\n" +
-           "- Утро: " + city.TempMorn + "°C\n" +
-           "- День: " + city.TempDay + "°C\n" +
-           "- Вечер: " + city.TempEve + "°C\n" +
-           "- Ночь: " + city.TempNight + "°C\n"
-}
-
-
-func commandCity(city storage.StorageItem, day time.Weekday) string {
-    var cityInfo CityInfo
-    cityInfo.Name = city.City.Name
-
-    for i, list := 0, city.List; i < len(list); i++ {
-        item := list[i]
-        weekday := time.Unix(int64(item.Dt), 0).Weekday()
-
-        if weekday == day {
-            cityInfo.Day = weekday
-            cityInfo.WindSpeed = strconv.FormatFloat(item.Speed, 'f', -1, 64)
-            cityInfo.Clouds = strconv.Itoa(item.Clouds)
-
-            cityInfo.TempMorn = strconv.FormatFloat(item.Temp.Morn, 'f', -1, 64)
-            cityInfo.TempDay = strconv.FormatFloat(item.Temp.Day, 'f', -1, 64)
-            cityInfo.TempEve = strconv.FormatFloat(item.Temp.Eve, 'f', -1, 64)
-            cityInfo.TempNight = strconv.FormatFloat(item.Temp.Night, 'f', -1, 64)
-
-            break
-        }
-    }
-
-    return "Город: " + cityInfo.Name + "\n" + formCityInfo(cityInfo)
-}
-
-
-func commandCityFullWeek(city storage.StorageItem) string {
-    var info string
-
-    for i, list := 0, city.List; i < len(list); i++ {
-        var cityInfo CityInfo
-        item := list[i]
-        weekday := time.Unix(int64(item.Dt), 0).Weekday()
-
-        cityInfo.Day = weekday
-        cityInfo.WindSpeed = strconv.FormatFloat(item.Speed, 'f', -1, 64)
-        cityInfo.Clouds = strconv.Itoa(item.Clouds)
-
-        cityInfo.TempMorn = strconv.FormatFloat(item.Temp.Morn, 'f', -1, 64)
-        cityInfo.TempDay = strconv.FormatFloat(item.Temp.Day, 'f', -1, 64)
-        cityInfo.TempEve = strconv.FormatFloat(item.Temp.Eve, 'f', -1, 64)
-        cityInfo.TempNight = strconv.FormatFloat(item.Temp.Night, 'f', -1, 64)
-
-        info += formCityInfo(cityInfo) + "\n---\n"
-    }
-
-    return "Город: " + city.City.Name + "\n\n" + info
 }
 
 
@@ -158,7 +79,7 @@ func main() {
 
         switch command {
             case HELP:
-                answerText = commandHelp()
+                answerText = commands.CommandHelp()
             
             case CITY:
                 answerText = "cityName == " + cityName
@@ -170,18 +91,17 @@ func main() {
                 }
 
                 if len(args) == 2 {
-                    answerText = commandCity(city, time.Now().Weekday()) // Погода на сегодня
+                    answerText = commands.CommandCity(city, time.Now().Weekday())
                 } else if len(args) == 3 && args[2] == "week" {
-                    answerText = commandCityFullWeek(city) // Погода на всю неделю
+                    answerText = commands.CommandCityFullWeek(city)
                 } else {
-                    answerText = commandCity(city, storage.EnByRuDayMap(args[2])) // Погода на выбранный день
+                    answerText = commands.CommandCity(city, storage.EnByRuDayMap(args[2]))
                 }
             
             default:
                 answerText = "404. Такой команды не существует."
         }
 
-        store.Get("")
         msg := tgbotapi.NewMessage(update.Message.Chat.ID, answerText)
         bot.Send(msg)
     }

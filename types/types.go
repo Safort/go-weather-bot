@@ -1,4 +1,8 @@
-package weathermap
+package types
+
+import (
+    "time"
+)
 
 
 type Coord struct {
@@ -38,4 +42,15 @@ type WeatherMap struct {
     City City
     Cod string
     List []ListItem
+}
+
+type CityInfo struct {
+    Name string
+    Day time.Weekday
+    WindSpeed string
+    Clouds string
+    TempMorn string
+    TempDay string
+    TempEve string
+    TempNight string
 }

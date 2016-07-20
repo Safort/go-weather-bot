@@ -3,12 +3,12 @@ package storage
 import (
     "time"
     "strconv"
-    "../weathermap"
+    "../types"
 )
 
 
 type StorageItem struct {
-    weathermap.WeatherMap
+    types.WeatherMap
     LastUpdate int
 }
 
@@ -16,7 +16,7 @@ type Storage struct {
     cities map[string]StorageItem
 }
 
-func (self *Storage) Set(name string, info weathermap.WeatherMap) StorageItem {
+func (self *Storage) Set(name string, info types.WeatherMap) StorageItem {
     t := time.Now()
     LastUpdate, _ := strconv.Atoi(t.Format("20060102150405"))
     self.cities[name] = StorageItem{info, LastUpdate}
