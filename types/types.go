@@ -54,3 +54,9 @@ type CityInfo struct {
     TempEve string
     TempNight string
 }
+
+
+const (
+    HELP = "/help"
+    CITY = "/city"
+)

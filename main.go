@@ -16,6 +16,7 @@ import (
 )
 
 
+
 func requestCityInfo(cityName string) types.WeatherMap {
     var weather types.WeatherMap
     cnfg := config.Load()
@@ -43,15 +44,48 @@ func requestCityInfo(cityName string) types.WeatherMap {
 }
 
 
+func sendAnswer(bot *tgbotapi.BotAPI, update tgbotapi.Update, store *storage.Storage) {
+    var answerText, cityName string
+    args := strings.Split(update.Message.Text, " ")
+    command := args[0]
+
+    if len(args) > 1 {
+        cityName = args[1]
+    }
+
+    switch command {
+        case types.HELP:
+            answerText = commands.CommandHelp()
+        
+        case types.CITY:
+            var city storage.StorageItem
+            var ok bool
+
+            if city, ok = store.Get(cityName); ok == false {
+                city = store.Set(cityName, requestCityInfo(cityName));
+            }
+
+            if len(args) == 2 {
+                answerText = commands.CommandCity(city, time.Now().Weekday())
+            } else if len(args) == 3 && args[2] == "week" {
+                answerText = commands.CommandCityFullWeek(city)
+            } else {
+                answerText = commands.CommandCity(city, storage.EnByRuDayMap(args[2]))
+            }
+        
+        default:
+            answerText = commands.CommandNotFound()
+    }
+
+    msg := tgbotapi.NewMessage(update.Message.Chat.ID, answerText)
+    bot.Send(msg)
+}
+
+
 func main() {
     cnfg  := config.Load()
     store := storage.NewStorage()
     bot, err := tgbotapi.NewBotAPI(cnfg.BotToken)
-
-    const (
-        HELP = "/help"
-        CITY = "/city"
-    )
 
     if err != nil {
         log.Panic(err)
@@ -69,40 +103,6 @@ func main() {
             continue
         }
 
-        var answerText, cityName string
-        args := strings.Split(update.Message.Text, " ")
-        command := args[0]
-
-        if len(args) > 1 {
-            cityName = args[1]
-        }
-
-        switch command {
-            case HELP:
-                answerText = commands.CommandHelp()
-            
-            case CITY:
-                answerText = "cityName == " + cityName
-                var city storage.StorageItem
-                var ok bool
-
-                if city, ok = store.Get(cityName); ok == false {
-                    city = store.Set(cityName, requestCityInfo(cityName));
-                }
-
-                if len(args) == 2 {
-                    answerText = commands.CommandCity(city, time.Now().Weekday())
-                } else if len(args) == 3 && args[2] == "week" {
-                    answerText = commands.CommandCityFullWeek(city)
-                } else {
-                    answerText = commands.CommandCity(city, storage.EnByRuDayMap(args[2]))
-                }
-            
-            default:
-                answerText = commands.CommandNotFound()
-        }
-
-        msg := tgbotapi.NewMessage(update.Message.Chat.ID, answerText)
-        bot.Send(msg)
+        go sendAnswer(bot, update, store)
     }
 }
