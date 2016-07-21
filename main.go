@@ -1,108 +1,104 @@
 package main
 
 import (
-    "log"
-    "net/http"
-    "io/ioutil"
-    "bytes"
-    "encoding/json"
-    "strings"
-    "time"
-    "gopkg.in/telegram-bot-api.v4"
-    "./config"
-    "./types"
-    "./storage"
-    "./commands"
+	"./commands"
+	"./config"
+	"./storage"
+	"./types"
+	"bytes"
+	"encoding/json"
+	"gopkg.in/telegram-bot-api.v4"
+	"io/ioutil"
+	"log"
+	"net/http"
+	"strings"
+	"time"
 )
 
-
-
 func requestCityInfo(cityName string) types.WeatherMap {
-    var weather types.WeatherMap
-    cnfg := config.Load()
-    
-    // Create request url
-    url := "http://api.openweathermap.org/data/2.5/forecast/daily?"
-    url += "APPID=" + cnfg.OwmToken + "&"
-    url += "q=" + cityName + "&"
-    url += "lang=ru&units=metric"
+	var weather types.WeatherMap
+	cnfg := config.Load()
 
-    res, err := http.Get(url)
-    if err != nil {
-        log.Fatal(err)
-    }
-    resText, err := ioutil.ReadAll(res.Body)
-    res.Body.Close()
-    if err != nil {
-        log.Fatal(err)
-    }
+	// Create request url
+	url := "http://api.openweathermap.org/data/2.5/forecast/daily?"
+	url += "APPID=" + cnfg.OwmToken + "&"
+	url += "q=" + cityName + "&"
+	url += "lang=ru&units=metric"
 
-    dec := json.NewDecoder(bytes.NewReader(resText))
-    dec.Decode(&weather)
+	res, err := http.Get(url)
+	if err != nil {
+		log.Fatal(err)
+	}
+	resText, err := ioutil.ReadAll(res.Body)
+	res.Body.Close()
+	if err != nil {
+		log.Fatal(err)
+	}
 
-    return weather
+	dec := json.NewDecoder(bytes.NewReader(resText))
+	dec.Decode(&weather)
+
+	return weather
 }
-
 
 func sendAnswer(bot *tgbotapi.BotAPI, update tgbotapi.Update, store *storage.Storage) {
-    var answerText, cityName string
-    args := strings.Split(update.Message.Text, " ")
-    command := args[0]
+	var answerText, cityName string
+	args := strings.Split(update.Message.Text, " ")
+	command := args[0]
 
-    if len(args) > 1 {
-        cityName = args[1]
-    }
+	if len(args) > 1 {
+		cityName = args[1]
+	}
 
-    switch command {
-        case types.HELP:
-            answerText = commands.CommandHelp()
-        
-        case types.CITY:
-            var city storage.StorageItem
-            var ok bool
+	switch command {
+	case types.HELP:
+		answerText = commands.CommandHelp()
 
-            if city, ok = store.Get(cityName); ok == false {
-                city = store.Set(cityName, requestCityInfo(cityName));
-            }
+	case types.CITY:
+		var city storage.StorageItem
+		var ok bool
 
-            if len(args) == 2 {
-                answerText = commands.CommandCity(city, time.Now().Weekday())
-            } else if len(args) == 3 && args[2] == "week" {
-                answerText = commands.CommandCityFullWeek(city)
-            } else {
-                answerText = commands.CommandCity(city, storage.EnByRuDayMap(args[2]))
-            }
-        
-        default:
-            answerText = commands.CommandNotFound()
-    }
+		if city, ok = store.Get(cityName); ok == false {
+			city = store.Set(cityName, requestCityInfo(cityName))
+		}
 
-    msg := tgbotapi.NewMessage(update.Message.Chat.ID, answerText)
-    bot.Send(msg)
+		if len(args) == 2 {
+			answerText = commands.CommandCity(city, time.Now().Weekday())
+		} else if len(args) == 3 && args[2] == "week" {
+			answerText = commands.CommandCityFullWeek(city)
+		} else {
+			answerText = commands.CommandCity(city, storage.EnByRuDayMap(args[2]))
+		}
+
+	default:
+		answerText = commands.CommandNotFound()
+	}
+
+	msg := tgbotapi.NewMessage(update.Message.Chat.ID, answerText)
+	bot.Send(msg)
 }
 
-
 func main() {
-    cnfg  := config.Load()
-    store := storage.NewStorage()
-    bot, err := tgbotapi.NewBotAPI(cnfg.BotToken)
+	cnfg := config.Load()
+	store := storage.NewStorage()
+	bot, err := tgbotapi.NewBotAPI(cnfg.BotToken)
 
-    if err != nil {
-        log.Panic(err)
-    }
+	if err != nil {
+		log.Panic(err)
+	}
 
-    log.Printf("Authorized on account %s", bot.Self.UserName)
+	log.Printf("Authorized on account %s", bot.Self.UserName)
 
-    u := tgbotapi.NewUpdate(0)
-    u.Timeout = 60
+	u := tgbotapi.NewUpdate(0)
+	u.Timeout = 60
 
-    updates, err := bot.GetUpdatesChan(u)
+	updates, err := bot.GetUpdatesChan(u)
 
-    for update := range updates {
-        if update.Message == nil {
-            continue
-        }
+	for update := range updates {
+		if update.Message == nil {
+			continue
+		}
 
-        go sendAnswer(bot, update, store)
-    }
+		go sendAnswer(bot, update, store)
+	}
 }
