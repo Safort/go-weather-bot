@@ -34,7 +34,6 @@ func NewStorage() *Storage {
     return &Storage{cities: make(map[string]StorageItem)}
 }
 
-
 func EnByRuDayMap(day string) time.Weekday {
     m := map[string]time.Weekday {
         "Понедельник": time.Monday,

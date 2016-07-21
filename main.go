@@ -99,7 +99,7 @@ func main() {
                 }
             
             default:
-                answerText = "404. Такой команды не существует."
+                answerText = commands.CommandNotFound()
         }
 
         msg := tgbotapi.NewMessage(update.Message.Chat.ID, answerText)

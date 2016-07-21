@@ -73,3 +73,8 @@ func CommandCityFullWeek(city storage.StorageItem) string {
 
     return "Город: " + city.City.Name + "\n\n" + info
 }
+
+func CommandNotFound() string {
+    return "404. Такой команды не существует."
+}
+
