@@ -11,6 +11,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -46,6 +47,8 @@ func sendAnswer(bot *tgbotapi.BotAPI, update tgbotapi.Update, store *storage.Sto
 	args := strings.Split(update.Message.Text, " ")
 	command := args[0]
 
+	log.Printf("[%s] %s", update.Message.From.UserName, update.Message.Text)
+
 	if len(args) > 1 {
 		cityName = args[1]
 	}
@@ -55,11 +58,19 @@ func sendAnswer(bot *tgbotapi.BotAPI, update tgbotapi.Update, store *storage.Sto
 		answerText = commands.CommandHelp()
 
 	case types.CITY:
-		var city storage.StorageItem
-		var ok bool
+		var (
+			city storage.StorageItem
+			ok   bool
+		)
+		t := time.Now()
+		currentTime, _ := strconv.Atoi(t.Format("20060102150405"))
 
 		if city, ok = store.Get(cityName); ok == false {
 			city = store.Set(cityName, requestCityInfo(cityName))
+		} else {
+			if (currentTime - city.LastUpdate) > 60 {
+				city = store.Set(cityName, requestCityInfo(cityName))
+			}
 		}
 
 		if len(args) == 2 {
