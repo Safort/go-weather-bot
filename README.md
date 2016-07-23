@@ -1,1 +1,1 @@
-Just experiment with creating Telegram bot on Go.
+Just experiment to create a telegram bot on Go.
